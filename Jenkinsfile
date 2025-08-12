@@ -1,12 +1,6 @@
 pipeline {
   agent any
   stages {
-    stage('Clone') {
-      steps {
-        // Pull the latest code from your GitHub repo
-        git 'https://github.com/seTa1611/fastapi-todo.git'
-      }
-    }
     stage('Build Docker Image') {
       steps {
         // Build the Docker image and tag it (both by build number and 'latest')
