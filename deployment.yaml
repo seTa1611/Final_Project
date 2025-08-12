@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi-todo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi-todo
+  template:
+    metadata:
+      labels:
+        app: fastapi-todo
+    spec:
+      containers:
+      - name: fastapi-todo
+        image: asafm1611/fastapi-todo:latest 
+        ports:
+        - containerPort: 80
