@@ -1,3 +1,54 @@
+# 1. Service Account for Jenkins
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jenkins
+  namespace: default
+
+---
+# 2. RBAC: ClusterRoleBinding for Jenkins (cluster-admin for demo/lab)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jenkins-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: jenkins
+  namespace: default
+
+---
+# 3. PersistentVolume for Jenkins data
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jenkins-pv
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data/jenkins-pv"
+
+---
+# 4. PersistentVolumeClaim for Jenkins data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+# 5. Jenkins Deployment (controller pod)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -12,20 +63,28 @@ spec:
       labels:
         app: jenkins
     spec:
+      serviceAccountName: jenkins   # <-- Use the service account with RBAC
       containers:
-      - name: jenkins
-        image: jenkins/jenkins:lts
-        ports:
-        - containerPort: 8080
-        - containerPort: 50000
-        volumeMounts:
-        - name: jenkins-data
-          mountPath: /var/jenkins_home
+        - name: jenkins
+          image: jenkins/jenkins:lts
+          ports:
+            - containerPort: 8080
+            - containerPort: 50000
+          volumeMounts:
+            - name: jenkins-data
+              mountPath: /var/jenkins_home
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
       volumes:
-      - name: jenkins-data
-        persistentVolumeClaim:
-          claimName: jenkins-pvc
+        - name: jenkins-data
+          persistentVolumeClaim:
+            claimName: jenkins-pvc
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+
 ---
+# 6. Jenkins Service (NodePort for browser access)
 apiVersion: v1
 kind: Service
 metadata:
@@ -35,6 +94,6 @@ spec:
   ports:
     - port: 8080
       targetPort: 8080
-      nodePort: 32000  # Change as needed
+      nodePort: 32000
   selector:
     app: jenkins
