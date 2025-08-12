@@ -1,54 +1,3 @@
-# 1. Service Account for Jenkins
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: jenkins
-  namespace: default
-
----
-# 2. RBAC: ClusterRoleBinding for Jenkins (cluster-admin for demo/lab)
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: jenkins-admin
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- kind: ServiceAccount
-  name: jenkins
-  namespace: default
-
----
-# 3. PersistentVolume for Jenkins data
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: jenkins-pv
-spec:
-  capacity:
-    storage: 5Gi
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: "/mnt/data/jenkins-pv"
-
----
-# 4. PersistentVolumeClaim for Jenkins data
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: jenkins-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 5Gi
-
----
-# 5. Jenkins Deployment (controller pod)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -63,10 +12,10 @@ spec:
       labels:
         app: jenkins
     spec:
-      serviceAccountName: jenkins   # <-- Use the service account with RBAC
+      serviceAccountName: jenkins
       containers:
         - name: jenkins
-          image: jenkins/jenkins:lts
+          image: asafm1611/jenkins-docker:latest   # <--- USE YOUR IMAGE HERE
           ports:
             - containerPort: 8080
             - containerPort: 50000
@@ -82,18 +31,3 @@ spec:
         - name: docker-sock
           hostPath:
             path: /var/run/docker.sock
-
----
-# 6. Jenkins Service (NodePort for browser access)
-apiVersion: v1
-kind: Service
-metadata:
-  name: jenkins
-spec:
-  type: NodePort
-  ports:
-    - port: 8080
-      targetPort: 8080
-      nodePort: 32000
-  selector:
-    app: jenkins
