@@ -50,14 +50,3 @@ pipeline {
     }
   }
 }
-      }
-    }
-    stage('Deploy to Kubernetes') {
-      steps {
-        // Deploy (or update) on your K8s cluster
-        sh 'kubectl apply -f deployment.yaml'
-        sh 'kubectl apply -f service.yaml'
-      }
-    }
-  }
-}
